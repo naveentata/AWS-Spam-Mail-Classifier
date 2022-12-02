@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ""
+Resources:
+    LambdaFunction:
+        Type: "AWS::Lambda::Function"
+        DeletionPolicy: Retain
+        Properties:
+            Description: ""
+            FunctionName: "lf0"
+            Handler: "lambda_function.lambda_handler"
+            Architectures: 
+              - "x86_64"
+            Code: 
+                S3Bucket: "prod-iad-c1-djusa-tasks"
+                S3Key: !Sub "/snapshots/${AWS::AccountId}/lf0-3644614a-e753-4950-91ca-2c8b296b0861"
+                S3ObjectVersion: "qXF_hCxF8UX9GRV.rOjfWKkZiSbDAppq"
+            MemorySize: 128
+            Role: !GetAtt IAMRole.Arn
+            Runtime: "python3.7"
+            Timeout: 3
+            TracingConfig: 
+                Mode: "PassThrough"
+            Layers: 
+              - !Sub "arn:aws:lambda:${AWS::Region}:668099181075:layer:AWSLambda-Python37-SciPy1x:115"
+            EphemeralStorage: 
+                Size: 512
+
+    S3Bucket:
+        Type: "AWS::S3::Bucket"
+        DeletionPolicy: Retain
+        Properties:
+            BucketName: "mymailbuck"
+            NotificationConfiguration: 
+                LambdaConfigurations: 
+                  - 
+                    Event: "s3:ObjectCreated:*"
+                    Function: !GetAtt LambdaFunction.Arn
+
+    S3Bucket2:
+        Type: "AWS::S3::Bucket"
+        DeletionPolicy: Retain
+        Properties:
+            BucketName: "mlspamlmodel"
+            VersioningConfiguration: 
+                Status: "Enabled"
+
+    SESEmailIdentity:
+        Type: "AWS::SES::EmailIdentity"
+        DeletionPolicy: Retain
+        Properties:
+            EmailIdentity: "nashmail.ml"
+            DkimAttributes: 
+                SigningEnabled: true
+            MailFromAttributes: 
+                BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
+            ConfigurationSetAttributes: {}
+            FeedbackAttributes: 
+                EmailForwardingEnabled: true
+
+    SESEmailIdentity2:
+        Type: "AWS::SES::EmailIdentity"
+        DeletionPolicy: Retain
+        Properties:
+            EmailIdentity: "naveenstuntert@gmail.com"
+            DkimAttributes: 
+                SigningEnabled: false
+            MailFromAttributes: 
+                BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
+            ConfigurationSetAttributes: {}
+            FeedbackAttributes: 
+                EmailForwardingEnabled: true
+
+    IAMRole:
+        Type: "AWS::IAM::Role"
+        DeletionPolicy: Retain
+        Properties:
+            Path: "/service-role/"
+            RoleName: "lf0-role-l7fix8qu"
+            AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+            MaxSessionDuration: 3600
+            ManagedPolicyArns: 
+              - !Sub "arn:aws:iam::${AWS::AccountId}:policy/service-role/AWSLambdaBasicExecutionRole-4d40a544-80cc-424d-877b-01659a038e54"
+              - "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+              - "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
+              - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+
