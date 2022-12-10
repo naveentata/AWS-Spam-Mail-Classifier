@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: ""
+Parameters:
+  EndPoint:
+    Description: Prediction endpoint to classify the email
+    Type: String
+    Default: spam-email-endpoint
+
 Resources:
     LambdaFunction:
         Type: "AWS::Lambda::Function"
@@ -15,7 +21,7 @@ Resources:
                 S3Key: !Sub "/snapshots/${AWS::AccountId}/lf0-3644614a-e753-4950-91ca-2c8b296b0861"
                 S3ObjectVersion: "qXF_hCxF8UX9GRV.rOjfWKkZiSbDAppq"
             MemorySize: 128
-            Role: !GetAtt IAMRole.Arn
+            Role: "arn:aws:iam::374495966973:role/service-role/lf0-role-l7fix8qu"
             Runtime: "python3.7"
             Timeout: 3
             TracingConfig: 
@@ -44,43 +50,58 @@ Resources:
             VersioningConfiguration: 
                 Status: "Enabled"
 
-    SESEmailIdentity:
-        Type: "AWS::SES::EmailIdentity"
-        DeletionPolicy: Retain
-        Properties:
-            EmailIdentity: "nashmail.ml"
-            DkimAttributes: 
-                SigningEnabled: true
-            MailFromAttributes: 
-                BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
-            ConfigurationSetAttributes: {}
-            FeedbackAttributes: 
-                EmailForwardingEnabled: true
-
-    SESEmailIdentity2:
-        Type: "AWS::SES::EmailIdentity"
-        DeletionPolicy: Retain
-        Properties:
-            EmailIdentity: "naveenstuntert@gmail.com"
-            DkimAttributes: 
-                SigningEnabled: false
-            MailFromAttributes: 
-                BehaviorOnMxFailure: "USE_DEFAULT_VALUE"
-            ConfigurationSetAttributes: {}
-            FeedbackAttributes: 
-                EmailForwardingEnabled: true
-
-    IAMRole:
+    IAMLambdaRole:
         Type: "AWS::IAM::Role"
         DeletionPolicy: Retain
         Properties:
             Path: "/service-role/"
-            RoleName: "lf0-role-l7fix8qu"
+            RoleName: "lambdaiamrole"
             AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
             MaxSessionDuration: 3600
-            ManagedPolicyArns: 
-              - !Sub "arn:aws:iam::${AWS::AccountId}:policy/service-role/AWSLambdaBasicExecutionRole-4d40a544-80cc-424d-877b-01659a038e54"
-              - "arn:aws:iam::aws:policy/AmazonSESFullAccess"
-              - "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
-              - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 
+
+
+    S3BucketPolicy:
+        Type: "AWS::S3::BucketPolicy"
+        DeletionPolicy: Retain
+        Properties:
+            Bucket: "mymailbuck"
+            PolicyDocument: 
+                Version: "2012-10-17"
+                Statement: 
+                    - 
+                        Sid: "PublicReadGetObject"
+                        Effect: "Allow"
+                        Principal: "*"
+                        Action: "s3:GetObject"
+                        Resource: "arn:aws:s3:::mymailbuck/*"
+                    -
+                        Sid: "AllowSESPuts"
+                        Effect: "Allow"
+                        Principal: 
+                            Service: "ses.amazonaws.com"
+                        Action: "s3:PutObject"
+                        Resource: "arn:aws:s3:::mymailbuck/*"
+                        Condition: 
+                            StringEquals: 
+                                "AWS:Referer": !Ref AWS::AccountId
+
+
+    SESReceiptRuleSet:
+        Type: "AWS::SES::ReceiptRuleSet"
+        Properties:
+            RuleSetName: "recievemail1"
+
+    SESReceiptRule:
+        Type: "AWS::SES::ReceiptRule"
+        Properties:
+            Rule: 
+                ScanEnabled: true
+                Actions: 
+                  - 
+                    S3Action: 
+                        BucketName: "mymailbuck"
+                Enabled: true
+                Name: "receiveml1"
+                TlsPolicy: "Optional"
+            RuleSetName: "recievemail1"
