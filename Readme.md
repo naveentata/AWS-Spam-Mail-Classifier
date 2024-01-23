@@ -1,10 +1,6 @@
-# Cloud Computing and Big Data – Fall 2022
+# AWS Spam Mail Classifier Using AWS Services
 
-## Homework Assignment 3
-
-### Assignment:
-
-In this assignment you will Implement a machine learning model to predict whether a message is spam or not. Furthermore, you will create a system that upon receipt of an email message, it will automatically flag it as spam or not, based on the prediction obtained from the machine learning model.
+Implemented a machine learning model to predict whether a message is spam or not. Furthermore, I used SES to create a custom domain for receiving mails, a system that, upon receipt of an email message, automatically flags it as spam or not based on the prediction obtained from the machine learning model using AWS services. 
 
 
  ### Architecture Diagram:
